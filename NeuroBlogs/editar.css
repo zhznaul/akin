@@ -1,0 +1,58 @@
+body { 
+    /* NOVO: Fundo idêntico ao login.php e registrar.php */
+    background: linear-gradient(to right, #1067d8 , #1e3c72);
+    font-family: 'Poppins', sans-serif;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+} 
+
+/* Container centralizado para o formulário */
+.editar-container {
+    width: 100%;
+    max-width: 500px;
+    padding: 20px;
+}
+
+/* Estilo do cartão (o formulário em si) */
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    padding: 30px;
+}
+
+/* Inputs e Labels */
+.form-label {
+    font-weight: 500;
+    color: #1e3c72;
+}
+
+.form-control:focus {
+    box-shadow: none;
+    border-color: #1da1f2; /* Foco azul */
+}
+
+/* Botão Principal Salvar (Verde - btn-success) */
+.btn-success {
+    background-color: #28a745; 
+    border-color: #28a745;
+    transition: background-color 0.3s ease;
+}
+
+.btn-success:hover {
+    background-color: #1e7e34; 
+    border-color: #1e7e34;
+}
+
+/* Botão Cancelar (Secundário) */
+.btn-secondary {
+    background-color: #f1f5f9; 
+    border-color: #cccccc;
+    color: #333;
+    transition: background-color 0.3s ease;
+}
+.btn-secondary:hover {
+    background-color: #e0e0e0;
+}

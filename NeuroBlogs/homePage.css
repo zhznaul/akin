@@ -1,0 +1,293 @@
+/*
+ * Arquivo: homePage.css (Visual Moderno + Layout 3 Colunas Corrigido)
+ */
+
+/* =========================================
+   1. Variáveis e Reset
+   ========================================= */
+:root {
+    --primary-color: #3498db;
+    --primary-hover: #2980b9;
+    --secondary-color: #2c3e50;
+    --bg-body: #f0f2f5;
+    --bg-card: #ffffff;
+    --text-muted: #65676b;
+    --nav-width: 80px; /* Largura da barra lateral esquerda */
+    --shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.05), 0 8px 16px rgba(0, 0, 0, 0.05);
+    --border-radius-card: 16px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+    background-color: var(--bg-body);
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    color: var(--secondary-color);
+    margin: 0;
+    padding: 0;
+    /* Adiciona padding à esquerda para compensar o menu fixo */
+    padding-left: var(--nav-width); 
+}
+
+a { text-decoration: none; transition: 0.3s; }
+
+/* =========================================
+   2. Layout Principal (Centralização)
+   ========================================= */
+
+/* Container principal centralizado na tela (descontando a barra lateral) */
+.main-content-area {
+    max-width: 1100px; /* Largura máxima para não esticar demais em telas grandes */
+    margin: 0 auto;    /* Centraliza horizontalmente */
+    padding-top: 30px;
+    padding-bottom: 60px;
+    display: flex;     /* Garante que o grid do Bootstrap funcione bem */
+    justify-content: center;
+}
+
+/* =========================================
+   3. Barra Lateral Esquerda (Menu de Navegação)
+   ========================================= */
+
+/* Estilo para a barra que vem do include 'menu_navegacao.php' */
+.navigation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--nav-width);
+    height: 100vh;
+    background-color: #fff;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 20px;
+}
+
+/* Estilo dos ícones/links dentro da navegação */
+.navigation ul {
+    list-style: none;
+    padding: 0;
+    width: 100%;
+    margin: 0;
+}
+
+.navigation ul li {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.navigation ul li a {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 60px;
+    color: var(--secondary-color);
+    font-size: 1.5rem;
+    transition: all 0.2s;
+    border-left: 3px solid transparent; /* Indicador lateral */
+}
+
+.navigation ul li a:hover {
+    background-color: #f7f9fa;
+    color: var(--primary-color);
+    border-left-color: var(--primary-color);
+}
+
+/* =========================================
+   4. Estilos dos Cartões (Visual Bonito)
+   ========================================= */
+
+.card, .post-form-card, .member-list {
+    background-color: var(--bg-card) !important;
+    border: none !important;
+    border-radius: var(--border-radius-card) !important;
+    box-shadow: var(--shadow-soft) !important;
+    margin-bottom: 24px !important;
+}
+
+/* Efeito Hover nos Posts */
+.post-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.08) !important;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+/* =========================================
+   5. Formulário de Postagem
+   ========================================= */
+
+.post-form-card { padding: 20px !important; }
+
+.post-text-area {
+    background-color: #f0f2f5;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 15px;
+    resize: none;
+    transition: 0.2s;
+}
+
+.post-text-area:focus {
+    background-color: #fff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+    outline: none;
+}
+
+/* =========================================
+   6. Visual do Post (Feed)
+   ========================================= */
+
+.post-header {
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+}
+
+.post-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 12px;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.post-author { font-weight: 700; color: #1c1e21; }
+.post-time { font-size: 0.8rem; color: #999; }
+
+.post-content {
+    padding: 5px 20px 15px 20px;
+    color: #1c1e21;
+    font-size: 0.95rem;
+}
+
+.post-image {
+    border-radius: 8px;
+    margin-top: 10px;
+    border: 1px solid rgba(0,0,0,0.05);
+    width: 100%;
+}
+
+/* Botões de Ação (Curtir/Comentar) */
+.post-actions {
+    border-top: 1px solid #f0f2f5;
+    padding: 5px 10px;
+    display: flex;
+}
+
+.btn-action {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    margin: 5px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-weight: 600;
+    background: transparent;
+    transition: background 0.2s;
+}
+
+.btn-action:hover {
+    background-color: #f2f2f2;
+}
+
+/* Ícone de Like Ativo */
+.btn-action[data-liked="true"] i { color: #e74c3c !important; }
+
+/* =========================================
+   7. Sidebar Direita (Lista de Comunidades)
+   ========================================= */
+
+.member-list {
+    position: sticky; /* Mantém fixa ao rolar, se o CSS permitir */
+    top: 20px;
+}
+
+.member-list li {
+    transition: background 0.2s;
+    border-radius: 8px;
+}
+.member-list li:hover {
+    background-color: #f7f9fa;
+}
+
+.member-list img {
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* =========================================
+   8. Comentários
+   ========================================= */
+.comments-section {
+    background-color: #fafafa;
+    border-top: 1px solid #eee;
+    padding: 15px;
+}
+
+.comment-item {
+    background: #fff;
+    padding: 10px 12px;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    margin-bottom: 8px;
+    border: none !important;
+}
+
+/* =========================================
+   9. Responsividade (Mobile)
+   ========================================= */
+
+@media (max-width: 768px) {
+    body {
+        padding-left: 0; /* Remove o espaço lateral em telas pequenas */
+        padding-bottom: 60px; /* Espaço para menu inferior se houver */
+    }
+
+    /* Transforma o menu lateral em menu inferior em mobile */
+    .navigation {
+        width: 100%;
+        height: 60px;
+        top: auto;
+        bottom: 0;
+        flex-direction: row;
+        justify-content: space-around;
+        padding-top: 0;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .navigation ul {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+    }
+    
+    .navigation ul li {
+        width: auto;
+        margin-bottom: 0;
+    }
+    
+    .navigation ul li a {
+        height: 60px;
+        width: 60px;
+        border-left: none;
+        border-top: 3px solid transparent;
+    }
+
+    /* Oculta a sidebar direita em mobile para focar no feed */
+    .col-md-4 { 
+        display: none; 
+    }
+    
+    .col-md-8 {
+        width: 100%; /* Feed ocupa tudo */
+    }
+
+    .main-content-area {
+        padding-top: 10px;
+    }
+}

@@ -1,0 +1,132 @@
+/*
+ * Arquivo: css/config_acessibilidade.css
+ * Estilos específicos para a página de Configurações de Acessibilidade.
+ */
+
+/* Certifique-se de que a fonte OpenDyslexic está carregada se for oferecida */
+/* Exemplo de @font-face:
+@font-face {
+    font-family: 'OpenDyslexic';
+    src: url('../fonts/OpenDyslexic-Regular.woff2') format('woff2'); 
+    font-weight: normal;
+    font-style: normal;
+}
+*/
+
+.config-container {
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+    /* Centraliza o card de configurações */
+}
+
+.card-config {
+    width: 100%;
+    max-width: 650px;
+    background-color: var(--color-card-background, #ffffff);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--color-border, #ddd);
+}
+
+.card-config h2 {
+    font-size: 1.8rem;
+    color: var(--color-secondary, #1e3c72);
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+
+.subtitle-config {
+    font-size: 1rem;
+    color: #6c757d;
+    margin-bottom: 25px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--color-text-dark, #2c3e50);
+}
+
+.form-group select {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    font-size: var(--tamanho-base-fonte, 16px);
+    font-family: var(--fonte-preferida, sans-serif);
+    background-color: #ffffff;
+    cursor: pointer;
+    /* Força as cores escolhidas pelo usuário no select */
+    color: var(--texto-preferido, #2c3e50); 
+    background-color: var(--fundo-preferido, #ffffff);
+}
+
+/* Estilo para as opções do select para visualização prévia */
+.form-group option {
+    padding: 5px 10px;
+    font-size: 1rem;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 5px;
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.btn-salvar-config {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background-color: var(--color-primary, #2879e4);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 20px;
+}
+
+.btn-salvar-config:hover {
+    background-color: var(--color-secondary, #1e3c72);
+}
+
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+}
+
+.alert-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+}
+
+.back-link {
+    text-align: center;
+    margin-top: 25px;
+}
+
+.back-link a {
+    color: var(--color-primary, #2879e4);
+    text-decoration: none;
+    font-weight: 500;
+}

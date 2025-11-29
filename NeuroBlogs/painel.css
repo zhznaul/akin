@@ -1,0 +1,118 @@
+/*
+ * Arquivo: painel.css
+ * Tema: Azul e Branco - Com Fundo Cinza Claro
+ */
+
+/* === TEMAS DE FUNDO (Body) === */
+
+/* Fundo Padrão (Cinza Claro) */
+body {
+    /* MUDANÇA AQUI: Cinza muito claro */
+    background-color: #495057; 
+    min-height: 100vh;
+    color: #060607; /* Cor do texto padrão */
+}
+
+
+/* === ESTRUTURA E CAIXAS PRINCIPAIS === */
+
+.container {
+    max-width: 1200px;
+    padding: 3rem;
+    background-color: #ffffff; /* O conteúdo principal SEMPRE será branco */
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 50, 100, 0.15); 
+    border-radius: 1rem; 
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+/* === TÍTULOS E SEPARAÇÃO === */
+
+h1 {
+    font-weight: 400; 
+    color: #1a73e8; /* Azul vibrante */
+    border-bottom: 3px solid #e0e9f1; 
+    padding-bottom: 0.75rem;
+    margin-bottom: 2rem;
+    letter-spacing: 0.5px;
+}
+
+h3 {
+    font-weight: 600; 
+    color: #495057;
+    margin-bottom: 1.5rem;
+}
+
+/* === BOTÃO CUSTOMIZADO "NOVO USUÁRIO" === */
+
+.custom-new-user-btn {
+    background-color: #1a73e8; 
+    border-color: #1a73e8;
+    color: white;
+    font-weight: 600;
+    padding: 0.5rem 1.5rem;
+    border-radius: 0.5rem; 
+    transition: background-color 0.3s ease;
+}
+
+.custom-new-user-btn:hover {
+    background-color: #0c63e4;
+    border-color: #0c63e4;
+    color: white;
+}
+
+/* === FORMULÁRIO DE BUSCA === */
+
+#search-form {
+    padding: 1.5rem 1rem;
+    /* Fundo branco-gelo para o bloco de busca para manter a suavidade */
+    background-color: #f7f9fc; 
+    border-radius: 0.5rem;
+    margin-bottom: 2.5rem !important; 
+    border: 1px solid #e0e9f1;
+}
+
+/* Campos do formulário */
+.form-control {
+    border-radius: 0.35rem;
+    border: 1px solid #b8c8d8;
+}
+
+
+/* === TABELA DE USUÁRIOS === */
+
+.table {
+    margin-top: 1rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 0.5rem;
+    overflow: hidden; 
+}
+
+.table thead th {
+    background-color: #2196f3; 
+    color: white;
+    font-weight: 700;
+    vertical-align: middle;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) {
+    background-color: #f7f9fc;
+}
+
+/* Alinhamento de colunas menores */
+.table tbody td:nth-child(1), 
+.table tbody td:nth-child(4) {
+    text-align: center;
+}
+
+.table tbody td:last-child { 
+    text-align: center;
+    white-space: nowrap; 
+}
+
+.table .btn-sm {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    margin: 3px 2px;
+}

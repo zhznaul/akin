@@ -1,0 +1,131 @@
+/*
+ * Arquivo: registrar.css
+ * Estilização moderna e centralizada para a página de Cadastro,
+ * harmonizando com o estilo do login.
+ */
+
+ body { 
+    /* Fundo azul com gradiente (Mantido) */
+    background: linear-gradient(to right, #2879e4 , #2f5caa);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    min-height: 100vh;
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+} 
+
+/* Estilo do Cartão de Cadastro */
+.card {
+    border: none;
+    border-radius: 15px;
+    padding: 30px; /* Adiciona padding interno */
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2); /* Sombra destacada e profissional */
+}
+
+/* Título */
+.card h2 {
+    color: #1e3c72; /* Cor mais escura do gradiente para contraste */
+    font-weight: 500;
+    /* ALTERAÇÃO: Reduzindo margem do título de 25px para 20px */
+    margin-bottom: 20px !important; 
+}
+
+/* Labels */
+.form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.25rem;
+}
+
+/* === ESTILIZAÇÃO DE INPUTS (Bootstrap) === */
+
+/* Ícone de input */
+.input-group-text {
+    border: 1px solid #ced4da; /* Adiciona borda */
+    background-color: #f8f9fa !important; /* Fundo cinza claro para o ícone */
+    border-right: none;
+    color: #495057;
+    padding: 0.75rem 0.75rem; /* Aumenta o padding para harmonizar com o input */
+    border-radius: 0.375rem 0 0 0.375rem !important; 
+}
+
+/* Campo de Input */
+.form-control {
+    border: 1px solid #ced4da;
+    border-left: none;
+    padding: 0.75rem 0.5rem; /* Aumenta o padding para campos mais altos */
+    font-size: 1rem;
+    height: auto;
+    border-radius: 0 0.375rem 0.375rem 0;
+}
+
+.form-control:focus {
+    /* Shadow no azul do gradiente */
+    box-shadow: 0 0 0 0.25rem rgba(16, 103, 216, 0.25) !important; 
+    border-color: #1067d8;
+}
+
+/* Botão de Toggle da Senha */
+.btn-outline-secondary {
+    border: 1px solid #ced4da;
+    border-left: none;
+    background-color: #ffffff;
+    color: #6c757d;
+    border-radius: 0 0.375rem 0.375rem 0 !important;
+    padding: 0.375rem 0.75rem;
+}
+
+.btn-outline-secondary:hover {
+    color: #1e3c72;
+}
+
+
+/* === BOTÃO DE CADASTRO === */
+
+.btn-primary {
+    /* Cor do botão de Entrar ajustada para harmonizar com o gradiente */
+    background-color: #1067d8; 
+    border: 1px solid #1067d8;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #1e3c72; /* Escurece para o hover (cor final do gradiente) */
+    border-color: #1e3c72;
+}
+
+/* === LINKS E MENSAGENS === */
+
+.btn-link {
+    color: #1067d8; /* Cor azul primária */
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.btn-link:hover {
+    text-decoration: underline;
+}
+
+/* Estilização para containers de input com mensagem de erro */
+.input-group-with-error {
+    /* ALTERAÇÃO FINAL: Margem reduzida de 1rem para 0.75rem para compactar mais */
+    margin-bottom: 0.55rem; 
+}
+  
+.error-message {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #dc3545; /* Garante que a cor de erro seja vermelha */
+    margin-top: 0.25rem; 
+    margin-bottom: 0 !important;
+}
+
+/* Classe do JS para Fade Out */
+.fade-out {
+    transition: opacity 2s ease-in-out;
+    opacity: 0;
+}
