@@ -297,7 +297,7 @@ $prefs = [
                         <div class="community-meta">
                             <span class="member-count">
                                 <i class="fas fa-users"></i> 
-                                <span class="member-count-value"><?= $comunidade['total_membros'] ?></span> membros
+                                <span class="member-count-value"><?= $comunidade['total_membros'] ?></span> / 50 membros
                             </span>
                             <div>
                                 <a href="comunidade.php?id=<?= $comunidade['id'] ?>" class="btn-action-community btn-view">Ver</a>
