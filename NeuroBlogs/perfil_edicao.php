@@ -324,7 +324,9 @@ mysqli_stmt_close($stmt_fetch);
                     <input type="file" id="foto_perfil" name="foto_perfil" accept="image/*" class="form-control" style="padding: 10px 0;">
                     <small class="form-text text-muted">A foto será recortada em um círculo. **Role o mouse para Zoom e arraste o círculo para redimensionar.**</small>
                 </div>
-                
+            </form>
+
+            <form method="POST" enctype="multipart/form-data" id="profileForm">
                 <div class="form-group">
                     <label for="bio"><i class="fas fa-file-alt"></i> Sua Biografia (Bio):</label>
                     <textarea id="bio" name="bio" class="form-control" placeholder="Fale um pouco sobre você..."><?= htmlspecialchars($currentBio) ?></textarea>

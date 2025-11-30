@@ -22,52 +22,8 @@ if ($comunidadeId == 0) {
 }
 
 // ------------------------------------------------------------------------------------------------
-// FUNÇÕES UTILITÁRIAS (Redimensionamento e Tempo)
+// FUNÇÕES UTILITÁRIAS (APENAS Tempo - FUNÇÃO resizeImage FOI REMOVIDA)
 // ------------------------------------------------------------------------------------------------
-if (!function_exists('resizeImage')) {
-    function resizeImage($file, $maxWidth = 800, $maxHeight = 600) {
-        $info = getimagesize($file);
-        if ($info === false) { return false; }
-        list($originalWidth, $originalHeight) = $info;
-        $mime = $info['mime'];
-
-        $ratio = $originalWidth / $originalHeight;
-        $targetWidth = $originalWidth > $maxWidth ? $maxWidth : $originalWidth;
-        $targetHeight = $originalHeight > $maxHeight ? $maxHeight : $originalHeight;
-
-        if ($originalWidth > $maxWidth || $originalHeight > $maxHeight) {
-            if ($maxWidth / $maxHeight > $ratio) {
-                $targetWidth = $maxHeight * $ratio;
-                $targetHeight = $maxHeight;
-            } else {
-                $targetWidth = $maxWidth;
-                $targetHeight = $maxWidth / $ratio;
-            }
-        } 
-
-        switch ($mime) {
-            case 'image/jpeg': $src = imagecreatefromjpeg($file); break;
-            case 'image/png': $src = imagecreatefrompng($file); break;
-            case 'image/gif': $src = imagecreatefromgif($file); break;
-            default: return false;
-        }
-
-        $dst = imagecreatetruecolor($targetWidth, $targetHeight);
-        if ($mime == 'image/png') {
-            imagealphablending($dst, false);
-            imagesavealpha($dst, true);
-        }
-
-        imagecopyresampled($dst, $src, 0, 0, 0, 0, $targetWidth, $targetHeight, $originalWidth, $originalHeight);
-        imagedestroy($src);
-        
-        $temp_file = tempnam(sys_get_temp_dir(), 'resized_');
-        imagepng($dst, $temp_file);
-        imagedestroy($dst);
-
-        return $temp_file;
-    }
-}
 
 if (!function_exists('time_ago')) {
     function time_ago($datetime, $full = false) {
@@ -102,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $memberIdToExpel = intval($_POST['member_id']);
     $communityIdCheck = intval($_POST['community_id']);
 
-    // ... (Lógica de expulsão mantida da correção anterior) ...
+    // ... (Lógica de expulsão) ...
     $sql_check_creator = "SELECT id_criador FROM comunidades WHERE id = ?";
     $stmt_check = mysqli_prepare($conn, $sql_check_creator);
     mysqli_stmt_bind_param($stmt_check, "i", $communityIdCheck);
@@ -137,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 }
 
 // ------------------------------------------------------------------------------------------------
-// LÓGICA DE AÇÃO (POST) - CRIAÇÃO DE POST
+// LÓGICA DE AÇÃO (POST) - CRIAÇÃO DE POST (MODIFICADO: SEM REDIMENSIONAMENTO)
 // ------------------------------------------------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_post') {
     $communityIdPost = intval($_POST['community_id']);
@@ -161,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 
     if ($can_post && (!empty($conteudo) || (isset($_FILES['imagem_post']) && $_FILES['imagem_post']['error'] == 0))) {
         
-        // 2. Processamento da imagem (se existir)
+        // 2. Processamento da imagem (MODIFICADO: Usa move_uploaded_file, não requer GD)
         if (isset($_FILES['imagem_post']) && $_FILES['imagem_post']['error'] == 0) {
             $file = $_FILES['imagem_post'];
             $uploadDir = 'uploads/posts_comunidade/';
@@ -169,32 +125,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 mkdir($uploadDir, 0777, true);
             }
             
-            $temp_file = resizeImage($file['tmp_name']);
-            
-            if ($temp_file) {
-                $fileExt = 'png';
-                $uniqueName = 'post_c_' . $userId . '_' . time() . '.' . $fileExt;
-                $target_file = $uploadDir . $uniqueName;
+            // Gerar nome único e manter a extensão original do arquivo
+            $fileExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $uniqueName = 'post_c_' . $userId . '_' . time() . '.' . $fileExt;
+            $target_file = $uploadDir . $uniqueName;
 
-                if (rename($temp_file, $target_file)) {
-                    $imagem_path = $target_file;
-                }
+            // Usa move_uploaded_file (não requer GD)
+            if (move_uploaded_file($file['tmp_name'], $target_file)) {
+                $imagem_path = $target_file;
+            } else {
+                $postMessage = "Erro ao fazer upload da imagem do post.";
             }
         }
 
         // 3. Insere a postagem
-        $sql_insert = "INSERT INTO posts_comunidade (id_comunidade, usuario_id, conteudo, imagem) VALUES (?, ?, ?, ?)";
-        $stmt_insert = mysqli_prepare($conn, $sql_insert);
-        mysqli_stmt_bind_param($stmt_insert, "iiss", $communityIdPost, $userId, $conteudo, $imagem_path);
-        
-        if (mysqli_stmt_execute($stmt_insert)) {
-            // Recarrega a página para exibir o novo post
-            header("Location: comunidade.php?id=" . $communityIdPost);
-            exit;
-        } else {
-            $postMessage = "Erro ao criar a publicação: " . mysqli_error($conn);
+        if (!isset($postMessage)) { // Só insere se não houve erro no upload
+            $sql_insert = "INSERT INTO posts_comunidade (id_comunidade, usuario_id, conteudo, imagem) VALUES (?, ?, ?, ?)";
+            $stmt_insert = mysqli_prepare($conn, $sql_insert);
+            mysqli_stmt_bind_param($stmt_insert, "iiss", $communityIdPost, $userId, $conteudo, $imagem_path);
+            
+            if (mysqli_stmt_execute($stmt_insert)) {
+                // Recarrega a página para exibir o novo post
+                header("Location: comunidade.php?id=" . $communityIdPost);
+                exit;
+            } else {
+                $postMessage = "Erro ao criar a publicação: " . mysqli_error($conn);
+            }
+            mysqli_stmt_close($stmt_insert);
         }
-        mysqli_stmt_close($stmt_insert);
 
     } else if ($can_post) {
          $postMessage = "Conteúdo e/ou imagem são necessários para postar.";
@@ -211,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $postId = intval($_POST['post_id']);
     $response = ['success' => false, 'new_count' => 0, 'status' => ''];
 
-    // 1. Verifica se já curtiu
+    // ... (Lógica de Curtir/Descurtir) ...
     $sql_check = "SELECT id FROM curtidas_comunidade WHERE id_postagem = ? AND id_usuario = ?";
     $stmt_check = mysqli_prepare($conn, $sql_check);
     mysqli_stmt_bind_param($stmt_check, "ii", $postId, $userId);
@@ -265,6 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $commentText = trim($_POST['comment_text']);
     $response = ['success' => false];
 
+    // ... (Lógica de Comentário) ...
     if (!empty($commentText)) {
         $sql_insert = "INSERT INTO comentarios_comunidade (id_postagem, id_usuario, conteudo) VALUES (?, ?, ?)";
         $stmt_insert = mysqli_prepare($conn, $sql_insert);
@@ -278,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 
                 // Busca o novo comentário para retorno (incluindo apelido e foto)
                 $sql_comment = "
-                    SELECT c.conteudo, c.data_criacao, u.apelido, pu.foto_perfil
+                    SELECT c.id, c.conteudo, c.data_criacao, u.apelido, u.id AS usuario_id, pu.foto_perfil
                     FROM comentarios_comunidade c
                     JOIN usuarios u ON c.id_usuario = u.id
                     LEFT JOIN perfil_usuario pu ON u.id = pu.id
@@ -292,13 +251,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 mysqli_stmt_close($stmt_comment);
 
                 if ($new_comment) {
+                    // Determina se o usuário pode deletar este novo comentário (ele acabou de criar, então sim)
+                    $canDelete = true; 
+                    
                     // Adiciona o novo comentário ao HTML de resposta
                     $response['new_comment_html'] = '
-                        <div class="comment-item border-bottom pb-2 mb-2">
+                        <div class="comment-item border-bottom pb-2 mb-2" id="comment-' . $new_comment['id'] . '">
                             <div class="d-flex align-items-center mb-1">
                                 <img src="' . htmlspecialchars($new_comment['foto_perfil'] ?? 'uploads/perfil/default.png') . '" alt="Foto" class="rounded-circle me-2" style="width: 30px; height: 30px;">
                                 <strong class="me-2">' . htmlspecialchars($new_comment['apelido']) . '</strong>
                                 <small class="text-muted ms-auto">' . time_ago($new_comment['data_criacao']) . '</small>
+                                
+                                <button class="btn btn-sm text-danger btn-delete-comment ms-2 p-0 border-0" data-comment-id="' . $new_comment['id'] . '" title="Excluir Comentário">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </div>
                             <p class="mb-0 ms-4">' . nl2br(htmlspecialchars($new_comment['conteudo'])) . '</p>
                         </div>
@@ -318,55 +284,224 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 // ------------------------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------------
-// LÓGICA DE TROCA DE FOTO DA COMUNIDADE (POST) - (Mantida da correção anterior)
+// LÓGICA DE AÇÃO (AJAX) - EXCLUIR POST DA COMUNIDADE
+// ------------------------------------------------------------------------------------------------
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_post') {
+    $postId = intval($_POST['post_id']);
+    $response = ['success' => false];
+
+    // 1. Verificar permissão: Autor do Post OU Criador da Comunidade
+    $sql_check = "
+        SELECT 
+            pc.usuario_id, 
+            pc.imagem, 
+            c.id_criador 
+        FROM 
+            posts_comunidade pc
+        JOIN 
+            comunidades c ON pc.id_comunidade = c.id
+        WHERE 
+            pc.id = ?
+    ";
+    $stmt_check = mysqli_prepare($conn, $sql_check);
+    
+    if ($stmt_check) {
+        mysqli_stmt_bind_param($stmt_check, "i", $postId);
+        mysqli_stmt_execute($stmt_check);
+        $result_check = mysqli_stmt_get_result($stmt_check);
+        $postData = mysqli_fetch_assoc($result_check);
+        mysqli_stmt_close($stmt_check);
+
+        if ($postData) {
+            $postOwnerId = $postData['usuario_id'];
+            $postImagePath = $postData['imagem'];
+            $communityCreatorId = $postData['id_criador']; // ID do criador da comunidade
+
+            $isPostOwner = ($userId == $postOwnerId);
+            $isCommunityCreator = ($userId == $communityCreatorId);
+            
+            // Permissão: Deve ser o dono do post OU o criador da comunidade
+            if ($isPostOwner || $isCommunityCreator) { 
+                
+                // 2. Excluir o registro do banco (CASCADE deve cuidar de curtidas/comentários)
+                $sql_delete = "DELETE FROM posts_comunidade WHERE id = ?";
+                $stmt_delete = mysqli_prepare($conn, $sql_delete);
+                
+                if ($stmt_delete) {
+                    mysqli_stmt_bind_param($stmt_delete, "i", $postId);
+                    if (mysqli_stmt_execute($stmt_delete)) {
+                        
+                        // 3. Excluir o arquivo de imagem do servidor, se existir
+                        if (!empty($postImagePath) && file_exists($postImagePath)) {
+                            // Verificação de segurança para garantir que está excluindo do diretório correto
+                            if (strpos($postImagePath, 'uploads/posts_comunidade/') === 0) {
+                                unlink($postImagePath);
+                            }
+                        }
+                        
+                        $response['success'] = true;
+                        
+                    } else {
+                        $response['message'] = "Erro ao excluir post: " . mysqli_error($conn);
+                    }
+                    mysqli_stmt_close($stmt_delete);
+                } else {
+                    $response['message'] = "Erro na preparação da query de exclusão do post.";
+                }
+            } else {
+                $response['message'] = "Permissão negada.";
+            }
+        } else {
+            $response['message'] = "Postagem não encontrada.";
+        }
+    } else {
+        $response['message'] = "Erro na verificação de permissão (post).";
+    }
+
+    ob_clean();
+    header('Content-Type: application/json');
+    echo json_encode($response);
+    exit;
+}
+
+// ------------------------------------------------------------------------------------------------
+// LÓGICA DE AÇÃO (AJAX) - EXCLUIR COMENTÁRIO DA COMUNIDADE
+// ------------------------------------------------------------------------------------------------
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_comment_post' && isset($_POST['comment_id'])) {
+    $commentId = intval($_POST['comment_id']);
+    $response = ['success' => false];
+
+    // 1. Buscar dados do comentário, do post e da comunidade para checar permissão
+    $sql_check = "
+        SELECT 
+            cc.id_usuario AS commenter_id, 
+            pc.usuario_id AS post_owner_id,
+            cc.id_postagem AS post_id,
+            c.id_criador AS community_creator_id
+        FROM 
+            comentarios_comunidade cc
+        JOIN 
+            posts_comunidade pc ON cc.id_postagem = pc.id
+        JOIN
+            comunidades c ON pc.id_comunidade = c.id
+        WHERE 
+            cc.id = ?
+    ";
+    $stmt_check = mysqli_prepare($conn, $sql_check);
+    if ($stmt_check) {
+        mysqli_stmt_bind_param($stmt_check, "i", $commentId);
+        mysqli_stmt_execute($stmt_check);
+        $result_check = mysqli_stmt_get_result($stmt_check);
+        $commentData = mysqli_fetch_assoc($result_check);
+        mysqli_stmt_close($stmt_check);
+
+        if ($commentData) {
+            $isCommentOwner = ($userId == $commentData['commenter_id']);
+            $isPostOwner = ($userId == $commentData['post_owner_id']);
+            $isCommunityCreator = ($userId == $commentData['community_creator_id']); // NOVO: Checa se é o criador
+            $postId = $commentData['post_id'];
+
+            // Permissão: Dono do Comentário, Dono do Post OU Criador da Comunidade
+            if ($isCommentOwner || $isPostOwner || $isCommunityCreator) { 
+                
+                // 2. Excluir o comentário
+                $sql_delete = "DELETE FROM comentarios_comunidade WHERE id = ?";
+                $stmt_delete = mysqli_prepare($conn, $sql_delete);
+                if ($stmt_delete) {
+                    mysqli_stmt_bind_param($stmt_delete, "i", $commentId);
+                    if (mysqli_stmt_execute($stmt_delete)) {
+                        $response['success'] = true;
+                        $response['post_id'] = $postId;
+                        
+                        // 3. Recalcula a contagem de comentários
+                        $sql_count = "SELECT COUNT(*) FROM comentarios_comunidade WHERE id_postagem = ?";
+                        $stmt_count = mysqli_prepare($conn, $sql_count);
+                        mysqli_stmt_bind_param($stmt_count, "i", $postId);
+                        mysqli_stmt_execute($stmt_count);
+                        mysqli_stmt_bind_result($stmt_count, $commentCount);
+                        mysqli_stmt_fetch($stmt_count);
+                        $response['new_count'] = $commentCount; 
+                        mysqli_stmt_close($stmt_count);
+                        
+                    } else {
+                        $response['message'] = "Erro ao excluir: " . mysqli_error($conn);
+                    }
+                    mysqli_stmt_close($stmt_delete);
+                } else {
+                    $response['message'] = "Erro na preparação da query de exclusão.";
+                }
+            } else {
+                $response['message'] = "Permissão negada.";
+            }
+        } else {
+            $response['message'] = "Comentário não encontrado.";
+        }
+    } else {
+        $response['message'] = "Erro na verificação de permissão.";
+    }
+
+    ob_clean();
+    header('Content-Type: application/json');
+    echo json_encode($response);
+    exit;
+}
+
+// ------------------------------------------------------------------------------------------------
+// LÓGICA DE TROCA DE FOTO DA COMUNIDADE (POST) - (MODIFICADO: SEM REDIMENSIONAMENTO)
 // ------------------------------------------------------------------------------------------------
 $photoMessage = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_community_photo'])) {
-    // ... (Lógica de Troca de Foto - Sem alterações, utiliza resizeImage) ...
-    $error_photo = false;
-
+    
     if (isset($_FILES['nova_foto_comunidade']) && $_FILES['nova_foto_comunidade']['error'] == 0) {
         $file = $_FILES['nova_foto_comunidade'];
         $uploadDir = 'uploads/comunidade/';
         if (!is_dir($uploadDir)) { mkdir($uploadDir, 0777, true); }
-        $temp_file = resizeImage($file['tmp_name']);
-        
-        if ($temp_file) {
-            $fileExt = 'png';
+
+        // 1. Verifica permissão ANTES de processar
+        $sql_check_creator = "SELECT id_criador, imagem FROM comunidades WHERE id = ?";
+        $stmt_check = mysqli_prepare($conn, $sql_check_creator);
+        mysqli_stmt_bind_param($stmt_check, "i", $comunidadeId);
+        mysqli_stmt_execute($stmt_check);
+        $result_check = mysqli_stmt_get_result($stmt_check);
+        $community_pre_update = mysqli_fetch_assoc($result_check);
+        mysqli_stmt_close($stmt_check);
+
+        if ($community_pre_update && $community_pre_update['id_criador'] == $userId) {
+            
+            // Gerar nome único e manter a extensão original do arquivo
+            $original_tmp_file = $file['tmp_name'];
+            $fileExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
             $uniqueName = 'community_' . $comunidadeId . '_' . time() . '.' . $fileExt;
             $target_file = $uploadDir . $uniqueName;
 
-            $sql_check_creator = "SELECT id_criador, imagem FROM comunidades WHERE id = ?";
-            $stmt_check = mysqli_prepare($conn, $sql_check_creator);
-            mysqli_stmt_bind_param($stmt_check, "i", $comunidadeId);
-            mysqli_stmt_execute($stmt_check);
-            $result_check = mysqli_stmt_get_result($stmt_check);
-            $community_pre_update = mysqli_fetch_assoc($result_check);
-            mysqli_stmt_close($stmt_check);
-
-            if ($community_pre_update && $community_pre_update['id_criador'] == $userId) {
-                if (rename($temp_file, $target_file)) {
-                    $sql_update = "UPDATE comunidades SET imagem = ? WHERE id = ?";
-                    $stmt_update = mysqli_prepare($conn, $sql_update);
-                    mysqli_stmt_bind_param($stmt_update, "si", $target_file, $comunidadeId);
-                    
-                    if (mysqli_stmt_execute($stmt_update)) {
-                        $photoMessage = "Foto da comunidade atualizada com sucesso!";
-                        $oldImage = $community_pre_update['imagem'];
-                        if ($oldImage && $oldImage != 'uploads/comunidade/default.png' && file_exists($oldImage)) {
-                            unlink($oldImage);
-                        }
-                    } else {
-                        $photoMessage = "Erro ao atualizar caminho no banco de dados.";
+            // Usa move_uploaded_file (não requer GD)
+            if (move_uploaded_file($original_tmp_file, $target_file)) {
+                
+                // 3. Atualiza o banco de dados
+                $sql_update = "UPDATE comunidades SET imagem = ? WHERE id = ?";
+                $stmt_update = mysqli_prepare($conn, $sql_update);
+                mysqli_stmt_bind_param($stmt_update, "si", $target_file, $comunidadeId);
+                
+                if (mysqli_stmt_execute($stmt_update)) {
+                    $photoMessage = "Foto da comunidade atualizada com sucesso!";
+                    // Limpa o arquivo antigo
+                    $oldImage = $community_pre_update['imagem'];
+                    if ($oldImage && $oldImage != 'uploads/comunidade/default.png' && file_exists($oldImage)) {
+                        unlink($oldImage);
                     }
-                    mysqli_stmt_close($stmt_update);
-                } else { $photoMessage = "Erro ao mover o arquivo redimensionado."; }
+                } else {
+                    $photoMessage = "Erro ao atualizar caminho no banco de dados.";
+                }
+                mysqli_stmt_close($stmt_update);
             } else { 
-                $photoMessage = "Erro: Permissão negada para atualizar a foto."; 
-                if(file_exists($temp_file)) { unlink($temp_file); }
+                $photoMessage = "Erro ao mover o arquivo de upload."; 
             }
-        } else { $photoMessage = "Erro no processamento da imagem ou arquivo inválido."; }
-    } else if (!$error_photo) {
+
+        } else { 
+            $photoMessage = "Erro: Permissão negada para atualizar a foto."; 
+        }
+
+    } else {
         $photoMessage = "Nenhuma imagem válida enviada.";
     }
 }
@@ -435,7 +570,7 @@ function fetch_comments_for_post($conn, $postId) {
     $comments = [];
     $sql = "
         SELECT 
-            c.conteudo, c.data_criacao,
+            c.id, c.conteudo, c.data_criacao,
             u.apelido, u.id AS usuario_id, pu.foto_perfil
         FROM comentarios_comunidade c
         JOIN usuarios u ON c.id_usuario = u.id
@@ -531,8 +666,10 @@ $posts = fetch_community_posts($conn, $comunidadeId, $userId);
                     alt="Imagem da Comunidade" class="community-image">
                 
                 <?php if ($isCreator): ?>
-                <button id="btn-change-photo" class="btn btn-sm btn-light" title="Mudar foto" 
-                        style="position: absolute; bottom: 5px; right: 5px; opacity: 0.9; border-radius: 50%; padding: 5px;">
+                <button type="button" class="btn btn-sm btn-light position-absolute" 
+                        style="z-index: 10; bottom: 5px; right: 5px; opacity: 0.9; border-radius: 50%; padding: 5px;"
+                        data-bs-toggle="modal" data-bs-target="#changePhotoModal"
+                        title="Alterar foto da comunidade">
                     <i class="fas fa-camera"></i>
                 </button>
                 <?php endif; ?>
@@ -554,14 +691,6 @@ $posts = fetch_community_posts($conn, $comunidadeId, $userId);
                 <?php endif; ?>
             </div>
         </div>
-
-        <?php if ($isCreator): ?>
-        <form id="form-change-photo" method="POST" enctype="multipart/form-data" style="display: none;">
-            <input type="hidden" name="update_community_photo" value="1">
-            <input type="file" id="input-community-photo" name="nova_foto_comunidade" accept="image/*">
-            <button type="submit" id="submit-community-photo" style="display: none;">Salvar</button>
-        </form>
-        <?php endif; ?>
 
 
         <div class="row">
@@ -604,6 +733,9 @@ $posts = fetch_community_posts($conn, $comunidadeId, $userId);
                             foreach ($posts as $post): 
                             $postId = $post['id'];
                             $isPostLiked = $post['liked_by_user'];
+                            
+                            // Permissão para excluir o post: Dono do Post ou Criador da Comunidade
+                            $canDeletePost = ($userId == $post['usuario_id'] || $isCreator);
                         ?>
                             <div class="card mb-4 post-card">
                                 <div class="card-body">
@@ -613,11 +745,17 @@ $posts = fetch_community_posts($conn, $comunidadeId, $userId);
                                         <small class="text-muted ms-auto" title="<?php echo htmlspecialchars($post['data_criacao']); ?>">
                                             <?php echo time_ago($post['data_criacao']); ?>
                                         </small>
+
+                                        <?php if ($canDeletePost): ?>
+                                            <button class="btn btn-sm text-danger btn-delete-post ms-2" data-post-id="<?php echo $postId; ?>" title="Excluir Post">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        <?php endif; ?>
                                     </div>
                                     <p class="card-text post-content"><?php echo nl2br(htmlspecialchars($post['conteudo'])); ?></p>
                                     <?php if ($post['imagem_post']): ?>
                                         <div class="post-image-wrapper mb-3">
-                                            <img src="<?php echo htmlspecialchars($post['imagem_post']); ?>" class="img-fluid rounded" alt="Imagem da Postagem">
+                                            <img src="<?php echo htmlspecialchars($post['imagem_post']); ?>" class="img-fluid rounded" style='max-width:50vh; max-weight:50vh' alt="Imagem da Postagem">
                                         </div>
                                     <?php endif; ?>
                                     
@@ -639,12 +777,21 @@ $posts = fetch_community_posts($conn, $comunidadeId, $userId);
                                                 <?php if (empty($post['comments'])): ?>
                                                     <p class="text-muted text-center" id="no-comments-message-<?php echo $postId; ?>">Nenhum comentário ainda.</p>
                                                 <?php else: ?>
-                                                    <?php foreach ($post['comments'] as $comment): ?>
-                                                        <div class="comment-item border-bottom pb-2 mb-2">
+                                                    <?php foreach ($post['comments'] as $comment): 
+                                                        // Permissão para excluir comentário: Dono do comentário, Dono do Post ou Criador da Comunidade
+                                                        $canDeleteComment = ($userId == $comment['usuario_id'] || $isCreator || $userId == $post['usuario_id']);
+                                                    ?>
+                                                        <div class="comment-item border-bottom pb-2 mb-2" id="comment-<?php echo $comment['id']; ?>">
                                                             <div class="d-flex align-items-center mb-1">
                                                                 <img src="<?php echo htmlspecialchars($comment['foto_perfil'] ?? 'uploads/perfil/default.png'); ?>" alt="Foto" class="rounded-circle me-2" style="width: 30px; height: 30px;">
                                                                 <strong class="me-2"><?php echo htmlspecialchars($comment['apelido']); ?></strong>
                                                                 <small class="text-muted ms-auto" title="<?php echo htmlspecialchars($comment['data_criacao']); ?>"><?php echo time_ago($comment['data_criacao']); ?></small>
+                                                                
+                                                                <?php if ($canDeleteComment): ?>
+                                                                    <button class="btn btn-sm text-danger btn-delete-comment ms-2 p-0 border-0" data-comment-id="<?php echo $comment['id']; ?>" title="Excluir Comentário">
+                                                                        <i class="fas fa-times"></i>
+                                                                    </button>
+                                                                <?php endif; ?>
                                                             </div>
                                                             <p class="mb-0 ms-4"><?php echo nl2br(htmlspecialchars($comment['conteudo'])); ?></p>
                                                         </div>
@@ -701,6 +848,44 @@ $posts = fetch_community_posts($conn, $comunidadeId, $userId);
         </div>
     </div>
 
+<?php if ($isCreator): ?>
+<div class="modal fade" id="changePhotoModal" tabindex="-1" aria-labelledby="changePhotoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="comunidade.php?id=<?php echo $comunidadeId; ?>" method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changePhotoModalLabel">Alterar Foto da Comunidade</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <?php 
+                    // Se houver uma mensagem após a tentativa de POST, exibe aqui.
+                    if (isset($_POST['update_community_photo']) && !empty($photoMessage)): ?>
+                        <div class="alert alert-info"><?php echo $photoMessage; ?></div>
+                    <?php endif; ?>
+                    <p>Selecione uma nova imagem para a foto da comunidade (JPG, PNG, etc.).</p>
+                    <input type="file" class="form-control" name="nova_foto_comunidade" required accept="image/*">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" name="update_community_photo" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<?php if (isset($_POST['update_community_photo'])): ?>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var myModal = new bootstrap.Modal(document.getElementById('changePhotoModal'));
+        myModal.show();
+    });
+</script>
+<?php endif; ?>
+
+<?php endif; ?>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
@@ -709,34 +894,7 @@ $posts = fetch_community_posts($conn, $comunidadeId, $userId);
             const isCreator = <?php echo $isCreator ? 'true' : 'false'; ?>;
 
             // ------------------------------------------
-            // 1. LÓGICA DE TROCA DE FOTO (Criador)
-            // ------------------------------------------
-            if (isCreator) {
-                const btnChangePhoto = document.getElementById('btn-change-photo');
-                const inputCommunityPhoto = document.getElementById('input-community-photo');
-                const formChangePhoto = document.getElementById('form-change-photo');
-
-                if (btnChangePhoto && inputCommunityPhoto && formChangePhoto) {
-                    btnChangePhoto.addEventListener('click', function() {
-                        inputCommunityPhoto.click(); 
-                    });
-                    inputCommunityPhoto.addEventListener('change', function() {
-                        if (this.files.length > 0) {
-                            const file = this.files[0];
-                            const reader = new FileReader();
-                            reader.onload = function(e) {
-                                document.getElementById('community-photo-img').src = e.target.result;
-                            };
-                            reader.readAsDataURL(file);
-                            formChangePhoto.submit(); 
-                        }
-                    });
-                }
-            }
-
-
-            // ------------------------------------------
-            // 2. LÓGICA DE EXPULSÃO (Criador)
+            // 1. LÓGICA DE EXPULSÃO (Criador)
             // ------------------------------------------
             if (isCreator) {
                 document.querySelectorAll('.btn-expel').forEach(button => {
@@ -776,7 +934,7 @@ $posts = fetch_community_posts($conn, $comunidadeId, $userId);
             }
 
             // ------------------------------------------
-            // 3. LÓGICA DE CURTIR/DESCURTIR (AJAX)
+            // 2. LÓGICA DE CURTIR/DESCURTIR (AJAX)
             // ------------------------------------------
             document.querySelectorAll('.like-btn').forEach(button => {
                 button.addEventListener('click', function() {
@@ -821,7 +979,7 @@ $posts = fetch_community_posts($conn, $comunidadeId, $userId);
 
 
             // ------------------------------------------
-            // 4. LÓGICA DE COMENTÁRIO (AJAX)
+            // 3. LÓGICA DE COMENTÁRIO (AJAX)
             // ------------------------------------------
             document.querySelectorAll('.comment-form').forEach(form => {
                 form.addEventListener('submit', function(e) {
@@ -848,7 +1006,6 @@ $posts = fetch_community_posts($conn, $comunidadeId, $userId);
                             const commentsList = document.getElementById(`comments-list-${postId}`);
                             const noCommentsMessage = document.getElementById(`no-comments-message-${postId}`);
                             
-                            // MUDANÇA 2: Usar o ID único para pegar o contador
                             const commentCountSpan = document.getElementById(`count-${postId}`);
                             
                             // Remove a mensagem 'Nenhum comentário ainda.' se ela existir
@@ -870,9 +1027,95 @@ $posts = fetch_community_posts($conn, $comunidadeId, $userId);
                 });
             });
 
+            // ------------------------------------------
+            // 4. LÓGICA DE EXCLUIR COMENTÁRIO (AJAX) - NOVO
+            // ------------------------------------------
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.btn-delete-comment')) {
+                    const deleteButton = e.target.closest('.btn-delete-comment');
+                    const commentId = deleteButton.getAttribute('data-comment-id');
+                    
+                    if (!confirm('Tem certeza que deseja excluir este comentário?')) {
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('action', 'delete_comment_post');
+                    formData.append('comment_id', commentId);
+
+                    fetch('comunidade.php?id=' + comunidadeId, { method: 'POST', body: formData })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const commentElement = document.getElementById(`comment-${commentId}`);
+                            if(commentElement) commentElement.remove();
+                            
+                            if (data.post_id && data.new_count !== undefined) {
+                                // Encontra o botão de comentário dentro do card que contém este post_id para atualizar o contador
+                                // Obs: O seletor abaixo assume que o botão de expandir comentários é o local do contador.
+                                // Como temos múltiplos posts, precisamos achar o botão certo.
+                                // Uma forma segura é achar o container do post.
+                                const commentsList = document.getElementById(`comments-list-${data.post_id}`);
+                                if (commentsList) {
+                                    const postCard = commentsList.closest('.post-card');
+                                    const commentCountElement = postCard.querySelector('.comment-count');
+                                    if(commentCountElement) commentCountElement.textContent = data.new_count;
+                                }
+                            }
+
+                            // Se a lista ficou vazia, adiciona a mensagem padrão
+                            const commentsList = document.getElementById(`comments-list-${data.post_id}`);
+                            if (commentsList && commentsList.children.length === 0) {
+                                commentsList.innerHTML = `<p class="text-muted text-center" id="no-comments-message-${data.post_id}">Nenhum comentário ainda.</p>`;
+                            }
+                            
+                        } else {
+                            alert(data.message || 'Erro ao excluir o comentário.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro de rede/AJAX na exclusão do comentário:', error);
+                        alert('Erro de conexão ao excluir o comentário.');
+                    });
+                }
+            });
+
 
             // ------------------------------------------
-            // 5. LÓGICA DE PRÉ-VISUALIZAÇÃO DE IMAGEM DO POST
+            // 5. LÓGICA DE EXCLUIR POST (AJAX) - NOVO
+            // ------------------------------------------
+            document.querySelectorAll('.btn-delete-post').forEach(button => {
+                button.addEventListener('click', function() {
+                    const postId = this.getAttribute('data-post-id');
+                    
+                    if (!confirm('ATENÇÃO: Você tem certeza que deseja excluir esta postagem? Todos os comentários e curtidas serão perdidos permanentemente.')) {
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('action', 'delete_post');
+                    formData.append('post_id', postId);
+
+                    fetch('comunidade.php?id=' + comunidadeId, { method: 'POST', body: formData })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Postagem excluída com sucesso! Recarregando a página.');
+                            window.location.reload(); 
+                        } else {
+                            alert(data.message || 'Erro ao excluir a postagem.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro de rede/AJAX na exclusão do post:', error);
+                        alert('Erro de conexão ao excluir a postagem.');
+                    });
+                });
+            });
+
+
+            // ------------------------------------------
+            // 6. LÓGICA DE PRÉ-VISUALIZAÇÃO DE IMAGEM DO POST
             // ------------------------------------------
             const imgInput = document.getElementById('imagem_post_comunidade');
             if(imgInput) {
@@ -896,18 +1139,6 @@ $posts = fetch_community_posts($conn, $comunidadeId, $userId);
                     }
                 });
             }
-
-            // ------------------------------------------
-            // 6. LÓGICA ENTRAR/SAIR DA COMUNIDADE (Se houver)
-            // ------------------------------------------
-            // Adapte este bloco se você usa AJAX para entrar/sair
-            /*
-            document.querySelectorAll('.btn[data-action]').forEach(button => {
-                button.addEventListener('click', function() {
-                    // Lógica AJAX para entrar/sair
-                });
-            });
-            */
         });
     </script>
 </body>

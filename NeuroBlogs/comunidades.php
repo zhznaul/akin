@@ -16,20 +16,37 @@ $userId = $_SESSION['usuario_id'];
 if (isset($_POST['action']) && isset($_POST['community_id'])) {
     $action = $_POST['action'];
     $communityId = intval($_POST['community_id']);
-    $response = ['success' => false];
+    $response = ['success' => false, 'error' => null]; // Adicionado 'error' para feedback
 
     if ($action == 'join') {
-        // Insere o usuário na tabela membros_comunidade
-        $sql = "INSERT IGNORE INTO membros_comunidade (id_comunidade, id_usuario) VALUES (?, ?)";
-        $stmt = mysqli_prepare($conn, $sql);
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, "ii", $communityId, $userId);
-            if (mysqli_stmt_execute($stmt)) {
-                $response['success'] = true;
-                $response['status'] = 'joined';
+        // --- NOVO: Verificação do Limite de Membros (50) ---
+        $maxMembers = 50;
+        $sql_check_count = "SELECT COUNT(*) FROM membros_comunidade WHERE id_comunidade = ?";
+        $stmt_check = mysqli_prepare($conn, $sql_check_count);
+        mysqli_stmt_bind_param($stmt_check, "i", $communityId);
+        mysqli_stmt_execute($stmt_check);
+        mysqli_stmt_bind_result($stmt_check, $currentCount);
+        mysqli_stmt_fetch($stmt_check);
+        mysqli_stmt_close($stmt_check);
+
+        if ($currentCount >= $maxMembers) {
+            $response['success'] = false;
+            $response['error'] = 'A comunidade atingiu o limite máximo de ' . $maxMembers . ' membros.';
+        } else {
+            // Insere o usuário na tabela membros_comunidade
+            $sql = "INSERT IGNORE INTO membros_comunidade (id_comunidade, id_usuario) VALUES (?, ?)";
+            $stmt = mysqli_prepare($conn, $sql);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, "ii", $communityId, $userId);
+                if (mysqli_stmt_execute($stmt)) {
+                    $response['success'] = true;
+                    $response['status'] = 'joined';
+                }
+                mysqli_stmt_close($stmt);
             }
-            mysqli_stmt_close($stmt);
         }
+        // -------------------------------------------------
+
     } elseif ($action == 'leave') {
         // Remove o usuário da tabela membros_comunidade
         $sql = "DELETE FROM membros_comunidade WHERE id_comunidade = ? AND id_usuario = ?";
@@ -44,8 +61,8 @@ if (isset($_POST['action']) && isset($_POST['community_id'])) {
         }
     }
     
-    // Recalcula a contagem de membros para a resposta AJAX
-    if ($response['success']) {
+    // Recalcula a contagem de membros para a resposta AJAX (somente se a ação foi bem-sucedida ou a tentativa foi bloqueada)
+    if ($response['success'] || $response['error']) { 
          $sql_count = "SELECT COUNT(*) FROM membros_comunidade WHERE id_comunidade = ?";
          $stmt_count = mysqli_prepare($conn, $sql_count);
          mysqli_stmt_bind_param($stmt_count, "i", $communityId);
@@ -324,8 +341,12 @@ $prefs = [
                         })
                         .then(response => response.json())
                         .then(data => {
-                            if (data.success) {
+                            // Certifica-se de que a contagem é atualizada mesmo se houve um erro de limite
+                            if (data.new_count !== undefined) {
                                 countSpan.textContent = data.new_count;
+                            }
+                            
+                            if (data.success) {
                                 
                                 // Alterna a ação e o estilo do botão
                                 if (data.status === 'joined') {
@@ -340,7 +361,12 @@ $prefs = [
                                     buttonElement.setAttribute('data-action', 'join');
                                 }
                             } else {
-                                alert('Erro ao processar a ação. Tente novamente.');
+                                // Exibe a mensagem de erro específica do limite, se houver
+                                if (data.error) {
+                                    alert(data.error);
+                                } else {
+                                    alert('Erro ao processar a ação. Tente novamente.');
+                                }
                             }
                         })
                         .catch(error => {
