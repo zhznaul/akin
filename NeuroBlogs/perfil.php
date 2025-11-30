@@ -976,15 +976,11 @@ mysqli_stmt_close($stmt_posts);
                     <img src="<?= htmlspecialchars($displayPhoto) ?>" alt="Foto de Perfil de <?= htmlspecialchars($displayApelido) ?>" class="profile-photo">
                 </div>
                 <h1><?= htmlspecialchars($displayApelido) ?></h1>
-                <p style="color: #666;">Membro da NeuroBlogs</p>
+                <p style="color: #666;">Membro da NeuroBlog</p>
                 <?php if ($isCurrentUser): ?>
                 <a href="perfil_edicao.php" class="btn-edit">
                     <i class="fas fa-user-edit"></i> Editar seu Perfil
                 </a>
-                <?php else: ?>
-                <button class="btn-follow">
-                    <i class="fas fa-user-plus"></i> Seguir
-                </button>
                 <?php endif; ?>
             </div>
             
